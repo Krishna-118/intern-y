@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsReader Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f6fa;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Navbar */
+    nav {
+      background-color: #667eea;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    nav h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    nav .role {
+      font-size: 16px;
+      color: #f0f0f0;
+      margin-right: 20px;
+    }
+
+    nav button {
+      background-color: #ff4d4f;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    nav button:hover {
+      background-color: #d9363e;
+    }
+
+    /* Main content */
+    main {
+      padding: 20px 30px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filters select {
+      padding: 7px 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    /* Grid layout */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* News card */
+    .news-item {
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .news-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .news-item h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 20px;
+    }
+
+    .news-item p {
+      margin: 5px 0;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    .news-item .meta {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 10px;
+    }
+
+    /* Role-based border highlight */
+    .viewer { border-left: 5px solid #28a745; }
+    .editor { border-left: 5px solid #ffc107; }
+    .admin { border-left: 5px solid #dc3545; }
+
+    @media (max-width: 600px) {
+      main { padding: 15px; }
+      .news-item { padding: 15px; }
+      .filters { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav>
+    <h1>Article Reader Dashboard</h1>
+    <div>
+      <span class="role" id="role">Logged in as: </span>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Filters -->
+    <div class="filters">
+      <select id="filterStatus">
+        <option value="all">All Status</option>
+        <option value="published">Published</option>
+        <option value="draft">Draft</option>
+      </select>
+      <select id="filterCategory">
+        <option value="all">All Categories</option>
+        <!-- Categories will be dynamically added -->
+      </select>
+    </div>
+
+    <!-- News Grid -->
+    <div id="news" class="news-grid"></div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    // Logout function
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'index.html';
+    }
+
+    // Dynamically populate categories filter from news items
+    const filterCategory = document.getElementById('filterCategory');
+    const filterStatus = document.getElementById('filterStatus');
+    let allNews = [];
+
+    function displayNews(newsItems) {
+      const container = document.getElementById('news');
+      container.innerHTML = '';
+
+      const selectedCategory = filterCategory.value;
+      const selectedStatus = filterStatus.value;
+
+      const filteredNews = newsItems.filter(item => {
+        const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+        const matchesStatus = selectedStatus === 'all' || item.status === selectedStatus;
+        return matchesCategory && matchesStatus;
+      });
+
+      filteredNews.forEach(item => {
+        const div = document.createElement('div');
+        div.classList.add('news-item');
+        div.classList.add(item.role); // Role-based color
+        div.innerHTML = `
+          <h3>${item.title}</h3>
+          <div class="meta">Status: ${item.status} | Category: ${item.category} | Created at: ${item.createdAt}</div>
+          <p>${item.content}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Populate category filter options dynamically
+    function populateCategories(newsItems) {
+      const categories = [...new Set(newsItems.map(item => item.category).filter(Boolean))];
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        filterCategory.appendChild(option);
+      });
+    }
+
+    // Listen to filters
+    filterCategory.addEventListener('change', () => displayNews(allNews));
+    filterStatus.addEventListener('change', () => displayNews(allNews));
+
+    // Override displayNews function in app.js after fetching
+    const originalFetch = fetch;
+    fetch = function(url, options) {
+      return originalFetch(url, options)
+        .then(res => res.json())
+        .then(data => {
+          // Transform notion API data into simplified format
+          allNews = data.map(item => ({
+            title: item.properties.title.title[0]?.plain_text || 'N/A',
+            content: item.properties.content.rich_text.map(rt => rt.plain_text).join('\n') || 'N/A',
+            status: item.properties.status.select?.name || 'N/A',
+            category: item.properties.category.select?.name || 'N/A',
+            createdAt: item.properties['created at']?.date?.start || 'N/A',
+            role: item.role || 'viewer'
+          }));
+          populateCategories(allNews);
+          displayNews(allNews);
+          return data;
+        });
+    };
+  </script>
+</body>
+</html>
