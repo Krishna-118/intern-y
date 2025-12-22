@@ -13,7 +13,7 @@ Content visibility is enforced based on user roles:
 
 Admin → sees all articles
 
-Editor → sees drafts + published articles
+Editor → sees drafts
 
 Viewer → sees only published articles
 
@@ -270,5 +270,3 @@ Single Notion-based flow
 
 Role enforcement from CMS
 
-
-You didn’t break anything — the confusion came from tooling + delivery issues, not your logic.
